@@ -313,6 +313,7 @@ class Vallox : public Component, public UARTDevice, public Climate {
     void setRhModeOff();
     void setHeatingModeOn();
     void setHeatingModeOff();
+    void setServiceNeededOff();
     void setServicePeriod(int months);
     void setServiceCounter(int months);
     void setHeatingTarget(int temp);
@@ -668,6 +669,13 @@ void Vallox::setRhModeOff() {
   }
 }
 
+void Vallox::setServiceNeededOff() {
+  if (setStatusVariable(VX_VARIABLE_STATUS, data.status.value & ~VX_STATUS_FLAG_SERVICE)) {
+    data.is_service.value = false;
+    statusChangedCallback();
+  }
+}
+
 void Vallox::setHeatingModeOn() {
   // Don't set if already active. Vallox seems to reset to default speed if same mode is set twice
   if (data.status.value & VX_STATUS_FLAG_HEATING_MODE) {
@@ -724,7 +732,7 @@ void Vallox::setServicePeriod(int months) {
 
 void Vallox::setServiceCounter(int months) {
   if (months >= 0 && months < 256) {
-    setVariable(VX_VARIABLE_SERVICE_COUNTER, months);
+    setVariableConfirmed(VX_VARIABLE_SERVICE_COUNTER, months);
     data.service_counter.value = months;
     statusChangedCallback();
   }
