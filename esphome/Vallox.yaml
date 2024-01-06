@@ -102,6 +102,17 @@ number:
           auto ptr = const_cast<custom::CustomClimateConstructor&>(id(my_vallox)).get_climate(0);
           static_cast<Vallox*>(ptr)->setHeatRecoveryBypassTemp(x);
 
+button:
+  - platform: template
+    id: vallox_reset_service_counter
+    name: vallox_reset_service_counter
+    entity_category: config
+    on_press:
+      then:
+        lambda: |-
+          auto ptr = const_cast<custom::CustomClimateConstructor&>(id(my_vallox)).get_climate(0);
+          static_cast<Vallox*>(ptr)->setServiceCounter(static_cast<Vallox*>(ptr)->getServicePeriod());
+          static_cast<Vallox*>(ptr)->setServiceNeededOff();
 
 text_sensor:
   - platform: template
