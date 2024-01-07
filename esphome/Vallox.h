@@ -6,6 +6,7 @@
 #define VX_VARIABLE_RH2 0x30
 #define VX_VARIABLE_SERVICE_PERIOD 0xA6
 #define VX_VARIABLE_SERVICE_COUNTER 0xAB
+#define VX_VARIABLE_T_PREHEATING 0x31
 #define VX_VARIABLE_T_OUTSIDE 0x32
 #define VX_VARIABLE_T_INSIDE 0x34
 #define VX_VARIABLE_T_EXHAUST 0x33
@@ -155,6 +156,7 @@ class Vallox : public Component, public UARTDevice, public Climate {
     Sensor          *x_vallox_inside             {nullptr};
     Sensor          *x_vallox_incoming           {nullptr};
     Sensor          *x_vallox_exhaust            {nullptr};
+    Sensor          *x_vallox_preheating         {nullptr};
     Sensor          *x_vallox_speed              {nullptr};
     Sensor          *x_vallox_default_fan_speed  {nullptr};
     Sensor          *x_vallox_service_period     {nullptr};
@@ -187,6 +189,7 @@ class Vallox : public Component, public UARTDevice, public Climate {
         Sensor *vallox_inside,
         Sensor *vallox_incoming,
         Sensor *vallox_exhaust,
+        Sensor *vallox_preheating,
         Sensor *vallox_speed,
         Sensor *vallox_default_fan_speed,
         Sensor *vallox_service_period,
@@ -212,6 +215,7 @@ class Vallox : public Component, public UARTDevice, public Climate {
             x_vallox_inside(vallox_inside),
             x_vallox_incoming(vallox_incoming),
             x_vallox_exhaust(vallox_exhaust),
+            x_vallox_preheating(vallox_preheating),
             x_vallox_speed(vallox_speed),
             x_vallox_default_fan_speed(vallox_default_fan_speed),
             x_vallox_service_period(vallox_service_period),
@@ -276,6 +280,7 @@ class Vallox : public Component, public UARTDevice, public Climate {
     int getOutsideTemp();
     int getIncomingTemp();
     int getExhaustTemp();
+    int getPreheatingTemp();
 
     boolean isOn();
     boolean isRhMode();
@@ -368,6 +373,7 @@ class Vallox : public Component, public UARTDevice, public Climate {
       intValue t_inside;
       intValue t_exhaust;
       intValue t_incoming;
+      intValue t_preheating;
 
       // RH
       intValue rh1;
@@ -425,6 +431,7 @@ class Vallox : public Component, public UARTDevice, public Climate {
     void sendOutsideTempReq();
     void sendIncomingTempReq();
     void sendExhaustTempReq();
+    void sendPreheatingTempReq();
     void sendFanSpeedReq();
     void sendDefaultFanSpeedReq();
     void sendServicePeriodReq();
@@ -586,6 +593,7 @@ void Vallox::statusChangedCallback() {
     if (x_vallox_inside != nullptr)             x_vallox_inside->publish_state(getInsideTemp());
     if (x_vallox_incoming != nullptr)           x_vallox_incoming->publish_state(getIncomingTemp());
     if (x_vallox_exhaust != nullptr)            x_vallox_exhaust->publish_state(getExhaustTemp());
+    if (x_vallox_preheating != nullptr)         x_vallox_preheating->publish_state(getPreheatingTemp());
     if (x_vallox_speed != nullptr)              x_vallox_speed->publish_state((isOn()) ? getFanSpeed() : 0 );
     if (x_vallox_default_fan_speed != nullptr)  x_vallox_default_fan_speed->publish_state(getDefaultFanSpeed());
     if (x_vallox_service_period != nullptr)     x_vallox_service_period->publish_state(getServicePeriod());
@@ -615,6 +623,7 @@ void Vallox::temperatureChangedCallback() {
     if (x_vallox_inside != nullptr)             x_vallox_inside->publish_state(getInsideTemp());
     if (x_vallox_incoming != nullptr)           x_vallox_incoming->publish_state(getIncomingTemp());
     if (x_vallox_exhaust != nullptr)            x_vallox_exhaust->publish_state(getExhaustTemp());
+    if (x_vallox_preheating != nullptr)         x_vallox_preheating->publish_state(getPreheatingTemp());
 }
 
 void Vallox::debugPrintCallback(String message) {
@@ -788,6 +797,10 @@ int Vallox::getExhaustTemp() {
   return data.t_exhaust.value;
 }
 
+int Vallox::getPreheatingTemp() {
+  return data.t_preheating.value;
+}
+
 boolean Vallox::isOn() {
   return data.is_on.value;
 }
@@ -899,6 +912,10 @@ void Vallox::sendIncomingTempReq() {
 
 void Vallox::sendExhaustTempReq() {
   requestVariable(VX_VARIABLE_T_EXHAUST);
+}
+
+void Vallox::sendPreheatingTempReq() {
+  requestVariable(VX_VARIABLE_T_PREHEATING);
 }
 
 void Vallox::sendStatusReq() {
@@ -1072,6 +1089,8 @@ void Vallox::decodeMessage(const byte message[]) {
     checkTemperatureChange(&(data.t_inside.value), ntc2Cel(value), &(data.t_inside.lastReceived));
   } else if (variable == VX_VARIABLE_T_INCOMING) { // INCOMING
     checkTemperatureChange(&(data.t_incoming.value), ntc2Cel(value), &(data.t_incoming.lastReceived));
+  } else if (variable == VX_VARIABLE_T_PREHEATING) { // PREHEATING
+    checkTemperatureChange(&(data.t_preheating.value), ntc2Cel(value), &(data.t_preheating.lastReceived));
   }
 
   // RH
@@ -1368,7 +1387,8 @@ boolean Vallox::isTemperatureInitDone() {
   return data.t_outside.lastReceived &&
          data.t_inside.lastReceived &&
          data.t_exhaust.lastReceived &&
-         data.t_incoming.lastReceived;
+         data.t_incoming.lastReceived &&
+         data.t_preheating.lastReceived;
 }
 
 boolean Vallox::isStatusInitDone() { // all initializations

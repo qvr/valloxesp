@@ -39,6 +39,12 @@ sensor:
     device_class: temperature
     unit_of_measurement: "°C"
     accuracy_decimals: 0
+  - platform: template
+    id: vallox_preheating
+    name: vallox_preheating
+    device_class: temperature
+    unit_of_measurement: "°C"
+    accuracy_decimals: 0
 ## misc sensors
   - platform: template
     id: vallox_speed
@@ -160,6 +166,7 @@ climate:
       id(vallox_inside),
       id(vallox_incoming),
       id(vallox_exhaust),
+      id(vallox_preheating),
       id(vallox_speed),
       id(vallox_default_fan_speed),
       id(vallox_service_period),
